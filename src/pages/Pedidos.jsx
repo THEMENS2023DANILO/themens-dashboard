@@ -52,7 +52,9 @@ export default function Pedidos() {
               <thead>
                 <tr>
                   <Th>Data</Th><Th>Pedido</Th><Th>Cliente</Th><Th>CPF</Th><Th>Valor</Th>
-                  <Th>Itens</Th><Th>Produtos</Th><Th>Qtd</Th><Th>Pagamento</Th><Th>Status pgto</Th>
+                  <Th>Itens</Th><Th>Qtd</Th>
+                  <Th>Chocosono</Th><Th>Tadalaspray</Th><Th>Prolongue 20</Th><Th>Prolongue 30</Th><Th>Creatina</Th>
+                  <Th>Pagamento</Th><Th>Status pgto</Th>
                 </tr>
               </thead>
               <tbody>
@@ -64,8 +66,12 @@ export default function Pedidos() {
                     <Td className="whitespace-nowrap">{r.cliente_cpf || '—'}</Td>
                     <Td className="whitespace-nowrap font-semibold">{fmtBRL(Number(r.valor_total))}</Td>
                     <Td className="max-w-xs truncate" title={r.itens}>{r.itens || '—'}</Td>
-                    <Td className="max-w-xs truncate" title={r.nomes_produtos}>{r.nomes_produtos || '—'}</Td>
                     <Td>{r.qtd_itens}</Td>
+                    <Td className="text-center">{r.qtd_chocosono || ''}</Td>
+                    <Td className="text-center">{r.qtd_tadalaspray || ''}</Td>
+                    <Td className="text-center">{r.qtd_prolongue20 || ''}</Td>
+                    <Td className="text-center">{r.qtd_prolongue30 || ''}</Td>
+                    <Td className="text-center">{r.qtd_creatina || ''}</Td>
                     <Td>{r.tipo_pagamento}</Td>
                     <Td>
                       <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${r.paid_at ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>

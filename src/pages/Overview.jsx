@@ -28,8 +28,8 @@ export default function Overview() {
 
       const [cadastros, consultas, pendentes, pedidos, spend, lastSpend] = await Promise.all([
         supabase.from('themens_users').select('id', { count: 'exact', head: true }).gte('created_at', start).lt('created_at', end),
-        supabase.from('v_dash_consultas').select('tipo_consulta, medico_nome').eq('status', 4).gte('attend_date', from).lte('attend_date', to).limit(20000),
-        supabase.from('v_dash_consultas').select('id', { count: 'exact', head: true }).eq('status', 1),
+        supabase.from('v_dash_consultas').select('tipo_consulta, medico_nome').in('status', [4, 5, 12, 13]).gte('attend_date', from).lte('attend_date', to).limit(20000),
+        supabase.from('v_dash_consultas').select('id', { count: 'exact', head: true }).eq('status', 1).gte('request_date', '2026-01-01'),
         supabase.from('v_dash_pedidos').select('valor_total, paid_at').gte('created_at', start).lt('created_at', end).limit(20000),
         supabase.from('v_dash_fb_spend').select('business_manager, spend').gte('date', from).lte('date', to).limit(20000),
         supabase.from('v_dash_fb_spend').select('date').order('date', { ascending: false }).limit(1),
@@ -73,8 +73,8 @@ export default function Overview() {
         <>
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
             <Card title="Cadastros" value={data.cadastros.toLocaleString('pt-BR')} sub="novos usuários no período" />
-            <Card title="Consultas finalizadas" value={data.finalizadas.toLocaleString('pt-BR')} sub="no período" />
-            <Card title="Pendentes de avaliação" value={data.pendentes.toLocaleString('pt-BR')} sub="fila atual (sem prescrição)" accent="text-amber-600" />
+            <Card title="Consultas realizadas" value={data.finalizadas.toLocaleString('pt-BR')} sub="atendidas no período" />
+            <Card title="Pendentes de avaliação" value={data.pendentes.toLocaleString('pt-BR')} sub="fila atual (desde 2026)" accent="text-amber-600" />
             <Card title="Pedidos pagos" value={data.pedidosPagos.toLocaleString('pt-BR')} sub={`+ ${data.pedidosNaoPagos} não pagos`} />
           </div>
 
