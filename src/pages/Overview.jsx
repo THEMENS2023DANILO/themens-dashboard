@@ -3,10 +3,10 @@ import { supabase, dayBounds, todaySP, fmtBRL } from '../supabase'
 import DateRange from '../components/DateRange'
 import { Card, Section, BarList, Spinner } from '../components/ui'
 
-function groupCount(rows, key) {
+function groupCount(rows, key, fallback = '—') {
   const map = {}
   for (const r of rows) {
-    const k = r[key] || '—'
+    const k = r[key] || fallback
     map[k] = (map[k] || 0) + 1
   }
   return Object.entries(map)
@@ -44,7 +44,7 @@ export default function Overview() {
       setData({
         cadastros: cadastros.count || 0,
         porTipo: groupCount(consultas.data || [], 'tipo_consulta'),
-        porMedico: groupCount(consultas.data || [], 'medico_nome'),
+        porMedico: groupCount(consultas.data || [], 'medico_nome', 'Barrada (sem médico)'),
         finalizadas: (consultas.data || []).length,
         pendentes: pendentes.count || 0,
         pedidosPagos: pagos.length,
