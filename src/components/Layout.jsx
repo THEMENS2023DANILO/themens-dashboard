@@ -7,6 +7,7 @@ const items = [
   { to: '/consultas', label: 'Consultas Médicas', icon: '🩺' },
   { to: '/rastreios', label: 'Rastreios', icon: '📦' },
   { to: '/status-pedidos', label: 'Status Pedidos', icon: '✅' },
+  { to: '/frete-expresso', label: 'Frete Expresso', icon: '🚀' },
 ]
 
 export default function Layout({ email, children }) {
