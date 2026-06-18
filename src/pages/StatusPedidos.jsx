@@ -27,6 +27,7 @@ export default function StatusPedidos() {
   const [total, setTotal] = useState(0)
   const [fConsulta, setFConsulta] = useState('')
   const [fRastreio, setFRastreio] = useState('')
+  const [fValidacao, setFValidacao] = useState('')
   const [search, setSearch] = useState('')
 
   useEffect(() => {
@@ -40,6 +41,7 @@ export default function StatusPedidos() {
         .range(page * PAGE, page * PAGE + PAGE - 1)
       if (fConsulta) q = q.eq('tem_consulta', fConsulta === 'sim')
       if (fRastreio) q = q.eq('tem_rastreio', fRastreio === 'sim')
+      if (fValidacao) q = q.eq('validacao', fValidacao)
       if (search.trim()) {
         const s = search.trim()
         q = q.or(`cpf.ilike.%${s}%,cliente_nome.ilike.%${s}%,numero_pedido.ilike.%${s}%`)
@@ -51,7 +53,7 @@ export default function StatusPedidos() {
     }
     load()
     return () => { alive = false }
-  }, [page, fConsulta, fRastreio, search])
+  }, [page, fConsulta, fRastreio, fValidacao, search])
 
   return (
     <div className="space-y-6">
@@ -60,6 +62,16 @@ export default function StatusPedidos() {
         <div className="flex flex-wrap items-center gap-4">
           <TriFilter label="Consulta" value={fConsulta} onChange={(v) => { setFConsulta(v); setPage(0) }} />
           <TriFilter label="Rastreio" value={fRastreio} onChange={(v) => { setFRastreio(v); setPage(0) }} />
+          <div className="flex items-center gap-1 text-sm">
+            <span className="mr-1 text-slate-500">Validação:</span>
+            <select value={fValidacao} onChange={(e) => { setFValidacao(e.target.value); setPage(0) }} className="rounded-lg border border-slate-300 bg-white px-3 py-1.5">
+              <option value="">Todas</option>
+              <option value="valid">Válida</option>
+              <option value="expired">Expirada</option>
+              <option value="no_prescription">Sem prescrição</option>
+              <option value="sem_consulta">Sem consulta</option>
+            </select>
+          </div>
           <input
             placeholder="Buscar CPF, nome ou pedido…"
             value={search}

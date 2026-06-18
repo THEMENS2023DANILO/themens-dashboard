@@ -18,6 +18,7 @@ export default function Consultas() {
   const [status, setStatus] = useState('1')
   const [tipo, setTipo] = useState('')
   const [tipos, setTipos] = useState([])
+  const [search, setSearch] = useState('')
 
   useEffect(() => {
     supabase.from('v_dash_consultas').select('tipo_consulta').limit(1000).then(({ data }) => {
@@ -36,6 +37,10 @@ export default function Consultas() {
         .range(page * PAGE, page * PAGE + PAGE - 1)
       if (status) q = q.eq('status', Number(status))
       if (tipo) q = q.eq('tipo_consulta', tipo)
+      if (search.trim()) {
+        const s = search.trim()
+        q = q.or(`paciente_nome.ilike.%${s}%,paciente_cpf.ilike.%${s}%,paciente_email.ilike.%${s}%,paciente_telefone.ilike.%${s}%`)
+      }
       const { data, count } = await q
       if (!alive) return
       setRows(data || [])
@@ -43,13 +48,19 @@ export default function Consultas() {
     }
     load()
     return () => { alive = false }
-  }, [page, status, tipo])
+  }, [page, status, tipo, search])
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-ink-900">Consultas Médicas</h1>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <input
+            placeholder="Buscar nome, CPF, e-mail ou telefone…"
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(0) }}
+            className="w-72 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+          />
           <select value={status} onChange={(e) => { setStatus(e.target.value); setPage(0) }} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm">
             {STATUS_OPTS.map((o) => <option key={o.v} value={o.v}>{o.label}</option>)}
           </select>

@@ -54,6 +54,7 @@ export default function Pedidos() {
                   <Th>Data</Th><Th>Pedido</Th><Th>Cliente</Th><Th>CPF</Th><Th>Valor</Th>
                   <Th>Itens</Th><Th>Qtd</Th>
                   <Th>Chocosono</Th><Th>Tadalaspray</Th><Th>Prolongue 20</Th><Th>Prolongue 30</Th><Th>Creatina</Th>
+                  <Th>Minoxidil</Th><Th>Finasterida</Th><Th>Shampoo</Th><Th>Vita Gummy</Th>
                   <Th>Pagamento</Th><Th>Status pgto</Th>
                 </tr>
               </thead>
@@ -72,6 +73,10 @@ export default function Pedidos() {
                     <Td className="text-center">{r.qtd_prolongue20 || ''}</Td>
                     <Td className="text-center">{r.qtd_prolongue30 || ''}</Td>
                     <Td className="text-center">{r.qtd_creatina || ''}</Td>
+                    <Td className="text-center">{r.qtd_minoxidil || ''}</Td>
+                    <Td className="text-center">{r.qtd_finasterida || ''}</Td>
+                    <Td className="text-center">{r.qtd_shampoo || ''}</Td>
+                    <Td className="text-center">{r.qtd_vitagummy || ''}</Td>
                     <Td>{r.tipo_pagamento}</Td>
                     <Td>
                       <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${r.paid_at ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>

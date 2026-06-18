@@ -26,16 +26,27 @@ export default function Overview() {
     async function load() {
       const { start, end } = dayBounds(from, to)
 
-      const [cadastros, consultas, pendentes, pedidos, spend, lastSpend] = await Promise.all([
+      // Mês corrente (independente do range selecionado) para faturamento e projeção
+      const [yy, mm] = today.split('-').map(Number)
+      const monthStart = `${yy}-${String(mm).padStart(2, '0')}-01T00:00:00-03:00`
+      const monthEnd = new Date(`${monthStart}`)
+      monthEnd.setMonth(monthEnd.getMonth() + 1)
+      const diasNoMes = new Date(yy, mm, 0).getDate()
+      const diaAtual = Number(today.split('-')[2])
+
+      const [cadastros, consultas, pendentes, pedidos, spend, lastSpend, mesPagos] = await Promise.all([
         supabase.from('themens_users').select('id', { count: 'exact', head: true }).gte('created_at', start).lt('created_at', end),
         supabase.from('v_dash_consultas').select('tipo_consulta, medico_nome').in('status', [4, 5, 12, 13]).gte('attend_date', from).lte('attend_date', to).limit(20000),
         supabase.from('v_dash_consultas').select('id', { count: 'exact', head: true }).eq('status', 1).gte('request_date', '2026-01-01'),
         supabase.from('v_dash_pedidos').select('valor_total, paid_at').gte('created_at', start).lt('created_at', end).limit(20000),
         supabase.from('v_dash_fb_spend').select('business_manager, spend').gte('date', from).lte('date', to).limit(20000),
         supabase.from('v_dash_fb_spend').select('date').order('date', { ascending: false }).limit(1),
+        supabase.from('v_dash_pedidos').select('valor_total').not('paid_at', 'is', null).gte('paid_at', monthStart).lt('paid_at', monthEnd.toISOString()).limit(50000),
       ])
 
       if (!alive) return
+      const fatMes = (mesPagos.data || []).reduce((s, p) => s + Number(p.valor_total || 0), 0)
+      const projecao = diaAtual > 0 ? (fatMes / diaAtual) * diasNoMes : 0
       const pagos = (pedidos.data || []).filter((p) => p.paid_at)
       const naoPagos = (pedidos.data || []).filter((p) => !p.paid_at)
       const spendPorBM = {}
@@ -54,6 +65,10 @@ export default function Overview() {
         spendTotal: Object.values(spendPorBM).reduce((a, b) => a + b, 0),
         spendPorBM,
         ultimoSpend: lastSpend.data?.[0]?.date,
+        fatMes,
+        projecao,
+        diaAtual,
+        diasNoMes,
       })
     }
     load()
@@ -85,6 +100,11 @@ export default function Overview() {
             {Object.entries(data.spendPorBM).map(([bm, v]) => (
               <Card key={bm} title={`Spend ${bm}`} value={fmtBRL(v)} accent="text-rose-500" />
             ))}
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <Card title="Faturamento do mês" value={fmtBRL(data.fatMes)} accent="text-emerald-600" sub={`pago até hoje (dia ${data.diaAtual}/${data.diasNoMes})`} />
+            <Card title="Projeção do mês" value={fmtBRL(data.projecao)} accent="text-brand-600" sub="ritmo atual × dias do mês" />
           </div>
 
           <div className="grid gap-6 lg:grid-cols-2">
