@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase, fmtBRL, fmtDate } from '../supabase'
-import { Section, Spinner, Th, Td } from '../components/ui'
+import { Section, Spinner, Th, Td, Card } from '../components/ui'
 
 const PAGE = 100
 
@@ -29,6 +29,14 @@ export default function StatusPedidos() {
   const [fRastreio, setFRastreio] = useState('')
   const [fValidacao, setFValidacao] = useState('')
   const [search, setSearch] = useState('')
+  const [mensal, setMensal] = useState(null)
+
+  useEffect(() => {
+    supabase.from('v_dash_status_mensal').select('*').then(({ data }) => setMensal(data || []))
+  }, [])
+
+  const validSemRastreio = (mensal || []).reduce((s, m) => s + (m.valid_sem_rastreio || 0), 0)
+  const maxMes = Math.max(...(mensal || []).map((m) => m.total_pedidos), 1)
 
   useEffect(() => {
     let alive = true
@@ -78,6 +86,31 @@ export default function StatusPedidos() {
             onChange={(e) => { setSearch(e.target.value); setPage(0) }}
             className="w-64 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
           />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Card
+          title="Prescrição válida sem rastreio"
+          value={mensal === null ? '…' : validSemRastreio.toLocaleString('pt-BR')}
+          sub="pedidos prontos para enviar"
+          accent="text-amber-600"
+        />
+        <div className="rounded-2xl bg-white p-5 shadow-sm">
+          <div className="mb-3 text-sm font-medium text-slate-500">Total de pedidos por mês</div>
+          {mensal === null ? (
+            <div className="text-sm text-slate-400">Carregando…</div>
+          ) : (
+            <div className="flex items-end gap-3" style={{ height: 120 }}>
+              {mensal.map((m) => (
+                <div key={m.mes} className="flex flex-1 flex-col items-center justify-end">
+                  <span className="mb-1 text-xs font-semibold text-ink-900">{m.total_pedidos}</span>
+                  <div className="w-full rounded-t bg-brand-500" style={{ height: `${(m.total_pedidos / maxMes) * 90}px` }} />
+                  <span className="mt-1 text-xs text-slate-400">{m.mes.slice(5)}/{m.mes.slice(2, 4)}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

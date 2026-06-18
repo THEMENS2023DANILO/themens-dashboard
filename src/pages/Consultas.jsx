@@ -38,8 +38,11 @@ export default function Consultas() {
       if (status) q = q.eq('status', Number(status))
       if (tipo) q = q.eq('tipo_consulta', tipo)
       if (search.trim()) {
+        // busca varre todo o histórico; sem busca, restringe a 2026
         const s = search.trim()
         q = q.or(`paciente_nome.ilike.%${s}%,paciente_cpf.ilike.%${s}%,paciente_email.ilike.%${s}%,paciente_telefone.ilike.%${s}%`)
+      } else {
+        q = q.gte('request_date', '2026-01-01')
       }
       const { data, count } = await q
       if (!alive) return
