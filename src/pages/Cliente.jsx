@@ -4,6 +4,16 @@ import { Card, Section, Spinner, Th, Td } from '../components/ui'
 
 const onlyDigits = (s) => (s || '').replace(/\D/g, '')
 
+// Tradução do payment_status do Nuvemshop (campo confiável; paid_at é vazio em pedidos antigos)
+const PAY_LABEL = {
+  paid: 'Pago',
+  pending: 'Pendente',
+  voided: 'Cancelado',
+  refunded: 'Reembolsado',
+  partially_refunded: 'Reemb. parcial',
+  chargeback: 'Chargeback',
+}
+
 function fmtCPF(cpf) {
   const d = onlyDigits(cpf)
   if (d.length !== 11) return cpf || '—'
@@ -56,7 +66,7 @@ async function loadProfile(cpf, user) {
       .limit(500),
     supabase
       .from('v_dash_consultas')
-      .select('appointment_code, tipo_consulta, status, status_label, request_date, attend_date, medico_nome, prescription_products_list, paciente_nome')
+      .select('appointment_code, tipo_consulta, condicao, medicamento, status, status_label, request_date, attend_date, medico_nome, prescription_products_list, paciente_nome')
       .eq('paciente_cpf', c)
       .order('request_date', { ascending: false })
       .limit(500),
@@ -73,13 +83,13 @@ async function loadProfile(cpf, user) {
     rastreios.find((r) => r.cliente_nome)?.cliente_nome ||
     null
 
-  const pagos = pedidos.filter((p) => p.paid_at)
+  const pagos = pedidos.filter((p) => p.payment_status === 'paid')
   const totalPago = pagos.reduce((s, p) => s + Number(p.valor_total || 0), 0)
 
-  // resumo de consultas por tipo
+  // resumo de consultas por condição
   const porTipo = {}
   for (const cst of consultas) {
-    const k = cst.tipo_consulta || '—'
+    const k = cst.condicao || cst.tipo_consulta || '—'
     porTipo[k] = (porTipo[k] || 0) + 1
   }
 
@@ -265,7 +275,7 @@ export default function Cliente() {
                         <Td className="font-medium">#{p.numero_pedido}</Td>
                         <Td className="whitespace-nowrap font-semibold">{fmtBRL(Number(p.valor_total || 0))}</Td>
                         <Td>
-                          <StatusPill label={p.paid_at ? 'Pago' : (p.payment_status || 'Não pago')} ok={!!p.paid_at} warn={!p.paid_at} />
+                          <StatusPill label={PAY_LABEL[p.payment_status] || p.payment_status || '—'} ok={p.payment_status === 'paid'} warn={p.payment_status === 'pending'} />
                         </Td>
                         <Td className="max-w-md">{p.itens || '—'}</Td>
                       </tr>
@@ -326,7 +336,7 @@ export default function Cliente() {
                 <table className="w-full">
                   <thead>
                     <tr>
-                      <Th>Solicitada</Th><Th>Atendida</Th><Th>Tipo</Th><Th>Status</Th><Th>Médico</Th><Th>Prescrição</Th>
+                      <Th>Solicitada</Th><Th>Atendida</Th><Th>Condição</Th><Th>Status</Th><Th>Médico</Th><Th>Medicamento</Th>
                     </tr>
                   </thead>
                   <tbody>
@@ -334,12 +344,12 @@ export default function Cliente() {
                       <tr key={`${c.appointment_code}-${i}`} className="hover:bg-slate-50 align-top">
                         <Td className="whitespace-nowrap">{fmtDate(c.request_date)}</Td>
                         <Td className="whitespace-nowrap">{fmtDate(c.attend_date)}</Td>
-                        <Td className="font-medium">{c.tipo_consulta || '—'}</Td>
+                        <Td className="font-medium">{c.condicao || c.tipo_consulta || '—'}</Td>
                         <Td>
                           <StatusPill label={c.status_label || String(c.status)} ok={c.status === 4} warn={c.status === 1} />
                         </Td>
                         <Td>{c.medico_nome || '—'}</Td>
-                        <Td className="max-w-md">{c.prescription_products_list || '—'}</Td>
+                        <Td className="max-w-md">{c.medicamento || '—'}</Td>
                       </tr>
                     ))}
                   </tbody>
