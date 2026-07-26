@@ -3,6 +3,7 @@ import { supabase } from '../supabase'
 
 const items = [
   { to: '/', label: 'Overview', icon: '📊' },
+  { to: '/cliente', label: 'Cliente', icon: '👤' },
   { to: '/pedidos', label: 'Breakdown Pedidos 2026', icon: '🛒' },
   { to: '/consultas', label: 'Consultas Médicas', icon: '🩺' },
   { to: '/rastreios', label: 'Rastreios', icon: '📦' },
