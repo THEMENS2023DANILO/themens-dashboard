@@ -9,6 +9,7 @@ import Consultas from './pages/Consultas'
 import Rastreios from './pages/Rastreios'
 import StatusPedidos from './pages/StatusPedidos'
 import FreteExpresso from './pages/FreteExpresso'
+import Cliente from './pages/Cliente'
 
 export default function App() {
   const [session, setSession] = useState(undefined)
@@ -32,6 +33,7 @@ export default function App() {
         <Route path="/consultas" element={<Consultas />} />
         <Route path="/rastreios" element={<Rastreios />} />
         <Route path="/status-pedidos" element={<StatusPedidos />} />
+        <Route path="/cliente" element={<Cliente />} />
         <Route path="/frete-expresso" element={<FreteExpresso />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
