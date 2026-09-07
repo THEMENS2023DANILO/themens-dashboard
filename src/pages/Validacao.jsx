@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../supabase'
 
-const TINY_PROXY = 'http://54.152.128.19:5001'
+const TINY_PROXY = 'https://api.emagrecimentoclinico.com.br'
 const EXCECAO_50 = '2x chocosono - durma melhor (2)'
 
 function calcValorTiny(products) {
