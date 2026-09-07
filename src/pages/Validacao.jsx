@@ -11,31 +11,37 @@ export default function Validacao() {
   const [progress, setProgress]     = useState(null)
   const [buscarErro, setBuscarErro] = useState('')
 
-  const STATUS_LABEL = {
-    valid:           { label: 'Válida',        color: 'bg-green-900/50 text-green-400' },
-    no_prescription: { label: 'Sem Prescrição', color: 'bg-red-900/50 text-red-400' },
-    expired:         { label: 'Expirada',       color: 'bg-yellow-900/50 text-yellow-400' },
-    pending:         { label: 'Pendente',       color: 'bg-slate-700 text-slate-300' },
-  }
-
   async function buscar() {
     const ids = rawIds.split(/[\n,;]+/).map(s => s.trim()).filter(Boolean)
     if (ids.length === 0) return
     setLoading(true)
     setBuscarErro('')
     setPedidos([])
+
     const { data, error } = await supabase
-      .from('order_prescription_validation')
-      .select('order_external_id, customer_name, customer_cpf, product_name, validation_status')
-      .in('order_external_id', ids)
+      .from('nuvemshop_orders')
+      .select('external_id, raw_data')
+      .in('external_id', ids)
+
     if (error) { setBuscarErro(`Erro: ${error.message}`); setLoading(false); return }
+
     const map = {}
-    for (const row of (data || [])) map[row.order_external_id] = row
+    for (const row of (data || [])) map[row.external_id] = row.raw_data
+
     setPedidos(ids.map(id => {
-      const row = map[id]
-      return { id, nome: row?.customer_name || '—', cpf: row?.customer_cpf || '—',
-        produto: row?.product_name || '—', status: row?.validation_status || 'pending',
-        found: !!row, checked: true, enviado: false, erro: '', sending: false }
+      const r = map[id]
+      const produtos = r?.products?.map(p => p.name).join(', ') || '—'
+      return {
+        id,
+        nome:    r?.contact_name           || '—',
+        cpf:     r?.contact_identification || '—',
+        produto: produtos,
+        found:   !!r,
+        checked: true,
+        enviado: false,
+        erro:    '',
+        sending: false,
+      }
     }))
     setLoading(false)
   }
@@ -55,9 +61,15 @@ export default function Validacao() {
       try {
         const res  = await fetch(`${TINY_PROXY}/api/enviar/${p.id}`, { method: 'POST' })
         const data = await res.json()
-        if (data.ok) { setPedidos(prev => prev.map(x => x.id === p.id ? { ...x, enviado: true, sending: false } : x)); ok++ }
-        else { setPedidos(prev => prev.map(x => x.id === p.id ? { ...x, sending: false, erro: data.erro || 'Erro Tiny' } : x)) }
-      } catch (e) { setPedidos(prev => prev.map(x => x.id === p.id ? { ...x, sending: false, erro: e.message } : x)) }
+        if (data.ok) {
+          setPedidos(prev => prev.map(x => x.id === p.id ? { ...x, enviado: true, sending: false } : x))
+          ok++
+        } else {
+          setPedidos(prev => prev.map(x => x.id === p.id ? { ...x, sending: false, erro: data.erro || 'Erro Tiny' } : x))
+        }
+      } catch (e) {
+        setPedidos(prev => prev.map(x => x.id === p.id ? { ...x, sending: false, erro: e.message } : x))
+      }
       await new Promise(r => setTimeout(r, 1200))
     }
     setProgress(`Concluído: ${ok}/${sel.length} enviados`)
@@ -74,6 +86,7 @@ export default function Validacao() {
         <h1 className="text-2xl font-bold text-white">Validação de Pedidos</h1>
         <p className="mt-1 text-sm text-slate-400">Cole os IDs, confira os dados e envie ao Tiny.</p>
       </div>
+
       <div className="rounded-xl bg-ink-900 p-6 space-y-4">
         <label className="block text-sm font-medium text-slate-300">IDs dos Pedidos (um por linha)</label>
         <textarea value={rawIds} onChange={e => setRawIds(e.target.value)}
@@ -104,29 +117,26 @@ export default function Validacao() {
               </button>
             </div>
           </div>
+
           <div className="divide-y divide-ink-800">
-            <div className="grid grid-cols-[2rem_6rem_1fr_1fr_1fr_9rem_6rem] gap-4 px-6 py-2 text-xs uppercase tracking-wider text-slate-500">
-              <div/><div>ID</div><div>Nome</div><div>CPF</div><div>Produto</div><div>Prescrição</div><div>Status</div>
+            <div className="grid grid-cols-[2rem_7rem_1fr_8rem_1fr_6rem] gap-4 px-6 py-2 text-xs uppercase tracking-wider text-slate-500">
+              <div/><div>ID</div><div>Nome</div><div>CPF</div><div>Produto</div><div>Status</div>
             </div>
-            {pedidos.map(p => {
-              const st = STATUS_LABEL[p.status] || STATUS_LABEL.pending
-              return (
-                <div key={p.id} className={`grid grid-cols-[2rem_6rem_1fr_1fr_1fr_9rem_6rem] gap-4 px-6 py-3 items-center text-sm ${p.enviado ? 'opacity-40' : ''} ${p.checked && !p.enviado ? 'bg-ink-800/30' : ''}`}>
-                  <input type="checkbox" checked={p.checked} disabled={p.enviado || p.sending} onChange={() => toggle(p.id)} className="w-4 h-4 accent-brand-500" />
-                  <span className="text-slate-400 font-mono text-xs truncate">{p.id}</span>
-                  <span className="text-white truncate">{p.nome}</span>
-                  <span className="text-slate-300 font-mono text-xs">{p.cpf}</span>
-                  <span className="text-slate-300 truncate">{p.produto}</span>
-                  <span><span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${st.color}`}>{st.label}</span></span>
-                  <span className="text-xs">
-                    {p.sending && <span className="text-blue-400">Enviando…</span>}
-                    {p.enviado && <span className="text-green-400">✓ Enviado</span>}
-                    {p.erro    && <span className="text-red-400" title={p.erro}>❌ Erro</span>}
-                    {!p.found && !p.enviado && !p.erro && !p.sending && <span className="text-yellow-500">Não encontrado</span>}
-                  </span>
-                </div>
-              )
-            })}
+            {pedidos.map(p => (
+              <div key={p.id} className={`grid grid-cols-[2rem_7rem_1fr_8rem_1fr_6rem] gap-4 px-6 py-3 items-center text-sm ${p.enviado ? 'opacity-40' : ''} ${p.checked && !p.enviado ? 'bg-ink-800/30' : ''}`}>
+                <input type="checkbox" checked={p.checked} disabled={p.enviado || p.sending} onChange={() => toggle(p.id)} className="w-4 h-4 accent-brand-500" />
+                <span className="text-slate-400 font-mono text-xs">{p.id}</span>
+                <span className="text-white truncate">{p.nome}</span>
+                <span className="text-slate-300 font-mono text-xs">{p.cpf}</span>
+                <span className="text-slate-300 truncate">{p.produto}</span>
+                <span className="text-xs">
+                  {p.sending && <span className="text-blue-400">Enviando…</span>}
+                  {p.enviado && <span className="text-green-400">✓ Enviado</span>}
+                  {p.erro    && <span className="text-red-400" title={p.erro}>❌ Erro</span>}
+                  {!p.found && !p.enviado && !p.erro && !p.sending && <span className="text-yellow-500">Não encontrado</span>}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
       )}
