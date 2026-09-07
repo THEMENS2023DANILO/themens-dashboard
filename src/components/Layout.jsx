@@ -9,6 +9,7 @@ const items = [
   { to: '/rastreios', label: 'Rastreios', icon: '📦' },
   { to: '/status-pedidos', label: 'Status Pedidos', icon: '✅' },
   { to: '/frete-expresso', label: 'Frete Expresso', icon: '🚀' },
+  { to: '/validacao', label: 'Validação Tiny', icon: '💊' },
 ]
 
 export default function Layout({ email, children }) {
