@@ -2,3 +2,5 @@ node_modules
 dist
 .env
 .env.local
+**/.ipynb_checkpoints
+*.ipynb
