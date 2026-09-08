@@ -37,7 +37,7 @@ export default function Overview() {
 
       const [cadastros, consultas, pendentes, pedidos, spend, lastSpend, mesPagos] = await Promise.all([
         supabase.from('themens_users').select('id', { count: 'exact', head: true }).gte('created_at', start).lt('created_at', end),
-        supabase.from('v_dash_consultas_agrupadas').select('tipo_consulta, medico_nome, total').gte('attend_date', from).lte('attend_date', to),
+        supabase.from('v_dash_consultas_agrupadas').select('tipo_consulta, medico_nome, total').gte('attend_date', from).lte('attend_date', to).limit(5000),
         supabase.from('v_dash_consultas').select('id', { count: 'exact', head: true }).eq('status', 1).gte('request_date', '2026-01-01'),
         supabase.from('v_dash_pedidos').select('valor_total, paid_at').gte('created_at', start).lt('created_at', end).limit(20000),
         supabase.from('v_dash_fb_spend_filtered').select('business_manager, account_name, spend').gte('date', from).lte('date', to).limit(20000),
