@@ -39,8 +39,8 @@ export default function Overview() {
         supabase.from('v_dash_consultas').select('tipo_consulta, medico_nome').in('status', [4, 5, 12, 13]).gte('attend_date', from).lte('attend_date', to).limit(20000),
         supabase.from('v_dash_consultas').select('id', { count: 'exact', head: true }).eq('status', 1).gte('request_date', '2026-01-01'),
         supabase.from('v_dash_pedidos').select('valor_total, paid_at').gte('created_at', start).lt('created_at', end).limit(20000),
-        supabase.from('v_dash_fb_spend').select('business_manager, spend').gte('date', from).lte('date', to).limit(20000),
-        supabase.from('v_dash_fb_spend').select('date').order('date', { ascending: false }).limit(1),
+        supabase.from('v_dash_fb_spend_filtered').select('business_manager, spend').gte('date', from).lte('date', to).limit(20000),
+        supabase.from('v_dash_fb_spend_filtered').select('date').order('date', { ascending: false }).limit(1),
         supabase.from('v_dash_pedidos').select('valor_total').not('paid_at', 'is', null).gte('paid_at', monthStart).lt('paid_at', monthEnd.toISOString()).limit(50000),
       ])
 
