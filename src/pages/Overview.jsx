@@ -39,7 +39,7 @@ export default function Overview() {
         supabase.from('v_dash_consultas').select('tipo_consulta, medico_nome').in('status', [4, 5, 12, 13]).gte('attend_date', from).lte('attend_date', to).limit(20000),
         supabase.from('v_dash_consultas').select('id', { count: 'exact', head: true }).eq('status', 1).gte('request_date', '2026-01-01'),
         supabase.from('v_dash_pedidos').select('valor_total, paid_at').gte('created_at', start).lt('created_at', end).limit(20000),
-        supabase.from('v_dash_fb_spend_filtered').select('business_manager, spend').gte('date', from).lte('date', to).limit(20000),
+        supabase.from('v_dash_fb_spend_filtered').select('business_manager, account_name, spend').gte('date', from).lte('date', to).limit(20000),
         supabase.from('v_dash_fb_spend_filtered').select('date').order('date', { ascending: false }).limit(1),
         supabase.from('v_dash_pedidos').select('valor_total').not('paid_at', 'is', null).gte('paid_at', monthStart).lt('paid_at', monthEnd.toISOString()).limit(50000),
       ])
@@ -50,7 +50,7 @@ export default function Overview() {
       const pagos = (pedidos.data || []).filter((p) => p.paid_at)
       const naoPagos = (pedidos.data || []).filter((p) => !p.paid_at)
       const spendPorBM = {}
-      for (const s of spend.data || []) spendPorBM[s.business_manager] = (spendPorBM[s.business_manager] || 0) + Number(s.spend)
+      for (const s of spend.data || []) spendPorBM[s.account_name] = (spendPorBM[s.account_name] || 0) + Number(s.spend)
 
       setData({
         cadastros: cadastros.count || 0,
