@@ -11,6 +11,7 @@ import StatusPedidos from './pages/StatusPedidos'
 import FreteExpresso from './pages/FreteExpresso'
 import Cliente from './pages/Cliente'
 import Validacao from './pages/Validacao'
+import Avaliacoes from './pages/Avaliacoes'
 
 export default function App() {
   const [session, setSession] = useState(undefined)
@@ -37,6 +38,7 @@ export default function App() {
         <Route path="/cliente" element={<Cliente />} />
         <Route path="/frete-expresso" element={<FreteExpresso />} />
         <Route path="/validacao" element={<Validacao />} />
+        <Route path="/avaliacoes" element={<Avaliacoes />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Layout>

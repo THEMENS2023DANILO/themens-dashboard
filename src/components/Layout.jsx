@@ -6,6 +6,7 @@ const items = [
   { to: '/cliente', label: 'Cliente', icon: '👤' },
   { to: '/pedidos', label: 'Breakdown Pedidos 2026', icon: '🛒' },
   { to: '/consultas', label: 'Consultas Médicas', icon: '🩺' },
+  { to: '/avaliacoes', label: 'Avaliações', icon: '📝' },
   { to: '/rastreios', label: 'Rastreios', icon: '📦' },
   { to: '/status-pedidos', label: 'Status Pedidos', icon: '✅' },
   { to: '/frete-expresso', label: 'Frete Expresso', icon: '🚀' },
