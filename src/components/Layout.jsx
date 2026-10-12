@@ -16,7 +16,7 @@ const items = [
   { to: '/glp1-gollog', label: 'GLP1 - Gollog', icon: '✈️' },
 ]
 
-export default function Layout({ email, children }) {
+export default function Layout({ email, master, children }) {
   return (
     <div className="flex min-h-screen">
       <aside className="flex w-64 shrink-0 flex-col bg-ink-900 text-slate-200">
@@ -25,7 +25,7 @@ export default function Layout({ email, children }) {
           <div className="text-xs uppercase tracking-widest text-slate-400">Dashboard</div>
         </div>
         <nav className="flex-1 space-y-1 px-3">
-          {items.map((it) => (
+          {[...items, ...(master ? [{ to: '/usuarios', label: 'Usuários', icon: '🔐' }] : [])].map((it) => (
             <NavLink
               key={it.to}
               to={it.to}
