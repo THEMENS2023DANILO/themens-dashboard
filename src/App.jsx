@@ -12,6 +12,9 @@ import FreteExpresso from './pages/FreteExpresso'
 import Cliente from './pages/Cliente'
 import Validacao from './pages/Validacao'
 import Avaliacoes from './pages/Avaliacoes'
+import Glp1 from './pages/Glp1'
+import Glp1Fiscal from './pages/Glp1Fiscal'
+import Glp1Gollog from './pages/Glp1Gollog'
 
 export default function App() {
   const [session, setSession] = useState(undefined)
@@ -39,6 +42,9 @@ export default function App() {
         <Route path="/frete-expresso" element={<FreteExpresso />} />
         <Route path="/validacao" element={<Validacao />} />
         <Route path="/avaliacoes" element={<Avaliacoes />} />
+        <Route path="/glp1" element={<Glp1 />} />
+        <Route path="/glp1-fiscal" element={<Glp1Fiscal />} />
+        <Route path="/glp1-gollog" element={<Glp1Gollog />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Layout>

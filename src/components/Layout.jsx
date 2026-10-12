@@ -11,6 +11,9 @@ const items = [
   { to: '/status-pedidos', label: 'Status Pedidos', icon: '✅' },
   { to: '/frete-expresso', label: 'Frete Expresso', icon: '🚀' },
   { to: '/validacao', label: 'Validação Tiny', icon: '💊' },
+  { to: '/glp1', label: 'GLP1', icon: '💉' },
+  { to: '/glp1-fiscal', label: 'GLP1 - Fiscal', icon: '🧾' },
+  { to: '/glp1-gollog', label: 'GLP1 - Gollog', icon: '✈️' },
 ]
 
 export default function Layout({ email, children }) {
