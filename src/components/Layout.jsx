@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { supabase } from '../supabase'
+import NovaVersao from './NovaVersao'
 
 const items = [
   { to: '/', label: 'Overview', icon: '📊' },
@@ -49,7 +50,10 @@ export default function Layout({ email, master, children }) {
           </button>
         </div>
       </aside>
-      <main className="flex-1 overflow-x-auto p-8">{children}</main>
+      <main className="flex-1 overflow-x-auto p-8">
+        <NovaVersao />
+        {children}
+      </main>
     </div>
   )
 }

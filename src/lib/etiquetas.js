@@ -2,6 +2,7 @@
 // - Rastreio: Zebra 100 x 70 mm, uma etiqueta por pedido.
 // - Vial: modelos COSMO e VERBENNA, uma etiqueta por unidade (ou por pedido), tamanho configurável.
 
+import { PDFDocument, StandardFonts, rgb } from 'pdf-lib'
 import { semAcento } from './glp1'
 
 const MM = 72 / 25.4
@@ -34,7 +35,6 @@ function quebrar(texto, font, size, largura) {
 
 // ---------------------------------------------------------------- rastreio
 export async function gerarEtiquetasRastreio(pedidos, nomeArquivo) {
-  const { PDFDocument, StandardFonts, rgb } = await import('pdf-lib')
   const doc = await PDFDocument.create()
   const font = await doc.embedFont(StandardFonts.Helvetica)
   const fb = await doc.embedFont(StandardFonts.HelveticaBold)
@@ -159,7 +159,6 @@ export function linhasVial(texto, p, valores) {
 
 export async function gerarEtiquetasVial(itens, modelo, nomeArquivo) {
   // itens: [{ pedido (objeto), linhas }]
-  const { PDFDocument, StandardFonts, rgb } = await import('pdf-lib')
   const doc = await PDFDocument.create()
   const fb = await doc.embedFont(StandardFonts.HelveticaBold)
   const W = modelo.largura * MM

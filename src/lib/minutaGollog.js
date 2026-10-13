@@ -2,6 +2,8 @@
 // Dados fixos (remetente The Mens, serviço, peso, embalagem...) vêm de glp1_config.gollog.
 // Variáveis por pedido: dados do cliente, NF emitida no Notazz e aeroporto de destino.
 
+import * as pdfLib from 'pdf-lib'
+
 const P = 'formulário1[0].#subform[0].'
 
 const dig = (s) => String(s ?? '').replace(/\D/g, '')
@@ -98,7 +100,7 @@ async function umaMinuta(lib, p, cfg, valorNfPadrao) {
 
 // Gera um PDF único com uma página por pedido e abre/baixa no navegador.
 export async function gerarMinutasPdf(pedidos, cfgGollog, valorNfPadrao, nomeArquivo) {
-  const lib = await import('pdf-lib')
+  const lib = pdfLib
   const saida = await lib.PDFDocument.create()
   for (const p of pedidos) {
     const doc = await umaMinuta(lib, p, cfgGollog || {}, valorNfPadrao)

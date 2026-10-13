@@ -212,13 +212,22 @@ export default function Glp1() {
 
       {!dados ? <Spinner /> : (
         <>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-medium text-slate-500">Produto:</span>
-            {PRODUTOS.map((f) => (
-              <button key={f.v} onClick={() => setProduto(f.v)} className={pill(produto === f.v)}>
-                {f.label} ({dados.lista.filter((p) => ehPago(p) && (!f.v || p.produto === f.v)).length})
-              </button>
-            ))}
+          <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-white p-3 shadow-sm">
+            <span className="text-sm font-semibold text-ink-900">Produto</span>
+            <div className="inline-flex overflow-hidden rounded-lg border border-slate-300">
+              {PRODUTOS.map((f) => (
+                <button
+                  key={f.v}
+                  onClick={() => setProduto(f.v)}
+                  className={`px-4 py-2 text-sm font-semibold transition ${
+                    produto === f.v ? 'bg-ink-900 text-white' : 'bg-white text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  {f.label} <span className="font-normal opacity-70">({dados.lista.filter((p) => ehPago(p) && (!f.v || p.produto === f.v)).length})</span>
+                </button>
+              ))}
+            </div>
+            {produto && <span className="text-xs text-slate-500">Cartões e lista mostram só {produto}.</span>}
           </div>
 
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
@@ -237,7 +246,7 @@ export default function Glp1() {
           </div>
 
           <Section
-            title={`${lista.length} pedidos`}
+            title={`${lista.length} pedidos${produto ? ` · ${produto}` : ''}`}
             right={
               <input
                 placeholder="Buscar nome, CPF, pedido ou cidade…"
