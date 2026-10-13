@@ -14,6 +14,7 @@ const items = [
   { to: '/glp1', label: 'GLP1', icon: '💉' },
   { to: '/glp1-fiscal', label: 'GLP1 - Fiscal', icon: '🧾' },
   { to: '/glp1-gollog', label: 'GLP1 - Gollog', icon: '✈️' },
+  { to: '/glp1-etiquetas', label: 'GLP1 - Etiquetas', icon: '🏷️' },
 ]
 
 export default function Layout({ email, master, children }) {

@@ -15,6 +15,7 @@ import Avaliacoes from './pages/Avaliacoes'
 import Glp1 from './pages/Glp1'
 import Glp1Fiscal from './pages/Glp1Fiscal'
 import Glp1Gollog from './pages/Glp1Gollog'
+import Glp1Etiquetas from './pages/Glp1Etiquetas'
 import MfaGate from './pages/Mfa'
 import Usuarios from './pages/Usuarios'
 
@@ -48,6 +49,7 @@ export default function App() {
         <Route path="/glp1" element={<Glp1 />} />
         <Route path="/glp1-fiscal" element={<Glp1Fiscal />} />
         <Route path="/glp1-gollog" element={<Glp1Gollog />} />
+        <Route path="/glp1-etiquetas" element={<Glp1Etiquetas />} />
         <Route path="/usuarios" element={<Usuarios />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
