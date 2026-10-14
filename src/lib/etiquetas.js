@@ -51,7 +51,7 @@ export async function gerarEtiquetasRastreio(pedidos, nomeArquivo) {
 
     // nº do pedido (canto superior direito)
     const ped = limpa(p.pedido)
-    pg.drawText(ped, { x: W - m - font.widthOfTextAtSize(ped, 7), y: y - 7, size: 7, font, color: cinza })
+    pg.drawText(ped, { x: W - m - fb.widthOfTextAtSize(ped, 9), y: y - 9, size: 9, font: fb, color: cinza })
 
     // NOME COMPLETO
     let tam = 12
@@ -84,6 +84,30 @@ export async function gerarEtiquetasRastreio(pedidos, nomeArquivo) {
         pg.drawLine({ start: { x: m + w + 4, y: yc - 1 }, end: { x: W - m, y: yc - 1 }, thickness: 0.7, color: preto })
       }
       yc += passo
+    }
+
+    // 2ª etiqueta do pedido: só nome do paciente + produto e quantidade
+    const pg2 = doc.addPage([W, H])
+    const nome = (p.nome || '').toUpperCase()
+    let tn = 18
+    let ln = quebrar(nome, fb, tn, larg)
+    while (ln.length > 2 && tn > 11) { tn -= 1; ln = quebrar(nome, fb, tn, larg) }
+    const prod = `${p.produto || ''}${p.dosagem ? ` ${p.dosagem}` : ''}`
+    const qtd = Math.max(1, Number(p.quantidade) || 1)
+    let tp = 14
+    let lp = quebrar(prod, font, tp, larg)
+    while (lp.length > 2 && tp > 9) { tp -= 1; lp = quebrar(prod, font, tp, larg) }
+    const blocos = [
+      ...ln.slice(0, 2).map((t) => ({ t, f: fb, s: tn })),
+      { t: '', f: font, s: 6 },
+      ...lp.slice(0, 2).map((t) => ({ t, f: font, s: tp })),
+      { t: `Quantidade: ${qtd} ${qtd > 1 ? 'unidades' : 'unidade'}`, f: fb, s: 14 },
+    ]
+    const altura = blocos.reduce((a, b) => a + b.s * 1.25, 0)
+    let y2 = (H + altura) / 2
+    for (const b of blocos) {
+      y2 -= b.s * 1.25
+      if (b.t) pg2.drawText(b.t, { x: m, y: y2, size: b.s, font: b.f, color: preto })
     }
   }
   baixar(await doc.save(), nomeArquivo)
@@ -184,4 +208,39 @@ export async function gerarEtiquetasVial(itens, modelo, nomeArquivo) {
     }
   }
   baixar(await doc.save(), nomeArquivo)
+}
+
+// ---------------------------------------------------------------- vial em ZPL (linguagem nativa da Zebra)
+// Gera um arquivo .zpl com uma etiqueta por item; vai direto para a impressora, sem PDF.
+export function gerarEtiquetasVialZpl(itens, modelo, dpi, nomeArquivo) {
+  const pmm = dpi === 300 ? 12 : 8 // pontos por mm
+  const W = Math.round(modelo.largura * pmm)
+  const H = Math.round(modelo.altura * pmm)
+  const m = Math.max(10, Math.round(W * 0.03))
+  const larg = W - 2 * m
+  const PROP = 0.58 // largura média de um caractere da fonte 0 em relação à altura
+  const zplTxt = (t) => String(t).replace(/[\^~\\]/g, ' ')
+
+  const etiquetas = itens.map(({ linhas }) => {
+    const fixas = linhas.filter((l) => !l.variavel).map((l) => l.txt.length)
+    const maior = Math.max(...(fixas.length ? fixas : linhas.map((l) => l.txt.length)), 1)
+    const h = Math.max(14, Math.min(60, Math.floor(larg / (maior * PROP))))
+    const passo = Math.round(h * 1.15)
+    let y = m
+    const campos = []
+    for (const l of linhas) {
+      const n = l.variavel ? Math.max(1, Math.ceil((l.txt.length * PROP * h) / larg)) : 1
+      if (y + passo * n > H - m) break
+      campos.push(`^FO${m},${y}^A0N,${h},${h}^FB${larg},${n},0,L,0^FD${zplTxt(l.txt)}^FS`)
+      y += passo * n
+    }
+    return ['^XA', '^CI28', `^PW${W}`, `^LL${H}`, '^LH0,0', ...campos, '^XZ'].join('\n')
+  })
+
+  const url = URL.createObjectURL(new Blob([etiquetas.join('\n') + '\n'], { type: 'text/plain' }))
+  const a = document.createElement('a')
+  a.href = url
+  a.download = nomeArquivo
+  a.click()
+  setTimeout(() => URL.revokeObjectURL(url), 60000)
 }

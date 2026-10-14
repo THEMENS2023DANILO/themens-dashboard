@@ -4,7 +4,7 @@ import { Section, Spinner, Th, Td } from '../components/ui'
 import { STATUS, COR_STATUS, PRODUTOS, ROTAS, ehPago, bateBusca } from '../lib/glp1'
 import {
   MODELOS_VIAL, CAMPOS_AUTO, ROTULO_CAMPO, camposDoTexto, linhasVial,
-  gerarEtiquetasRastreio, gerarEtiquetasVial,
+  gerarEtiquetasRastreio, gerarEtiquetasVial, gerarEtiquetasVialZpl,
 } from '../lib/etiquetas'
 
 // GLP1 - Etiquetas: rastreio (Zebra 100x70) e vial (COSMO / VERBENNA).
@@ -13,7 +13,7 @@ import {
 const LS = 'glp1-etiquetas-vial'
 const ler = () => { try { return JSON.parse(localStorage.getItem(LS) || '{}') } catch { return {} } }
 const gravar = (v) => { try { localStorage.setItem(LS, JSON.stringify(v)) } catch { /* sem storage */ } }
-const hoje = () => new Date().toISOString().slice(0, 10)
+const hoje = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date())
 
 export default function Glp1Etiquetas() {
   const [aba, setAba] = useState('rastreio')
@@ -40,8 +40,9 @@ export default function Glp1Etiquetas() {
     return base
   })
   const [porUnidade, setPorUnidade] = useState(salvo.porUnidade ?? true)
+  const [dpi, setDpi] = useState(salvo.dpi || 203)
   const [editarModelo, setEditarModelo] = useState(false)
-  useEffect(() => { gravar({ modeloId, cfg, porUnidade }) }, [modeloId, cfg, porUnidade])
+  useEffect(() => { gravar({ modeloId, cfg, porUnidade, dpi }) }, [modeloId, cfg, porUnidade, dpi])
 
   const atual = cfg[modeloId]
   const setAtual = (patch) => setCfg((c) => ({ ...c, [modeloId]: { ...c[modeloId], ...patch } }))
@@ -93,7 +94,7 @@ export default function Glp1Etiquetas() {
     setGerando(false)
   }
 
-  async function gerarVial() {
+  async function gerarVial(formato) {
     setGerando(true)
     setErro('')
     try {
@@ -109,7 +110,10 @@ export default function Glp1Etiquetas() {
         const n = porUnidade ? Math.max(1, Number(p.quantidade) || 1) : 1
         return Array.from({ length: n }, () => ({ pedido: p, linhas }))
       })
-      await gerarEtiquetasVial(itens, { largura: Number(atual.largura), altura: Number(atual.altura) }, `etiquetas-vial-${modeloId.toLowerCase()}-${hoje()}.pdf`)
+      const tam = { largura: Number(atual.largura), altura: Number(atual.altura) }
+      const base = `etiquetas-vial-${modeloId.toLowerCase()}-${hoje()}`
+      if (formato === 'zpl') gerarEtiquetasVialZpl(itens, tam, Number(dpi), `${base}.zpl`)
+      else await gerarEtiquetasVial(itens, tam, `${base}.pdf`)
     } catch (e) { setErro(String(e.message || e)) }
     setGerando(false)
   }
@@ -154,13 +158,13 @@ export default function Glp1Etiquetas() {
               </div>
             </div>
             <div className="text-sm text-slate-600">
-              <p>Uma etiqueta por pedido, com nome completo, endereço completo e os campos para o cliente preencher na entrega.</p>
+              <p>Duas etiquetas por pedido: 1) nome completo, endereço completo e os campos para o cliente preencher na entrega; 2) só o nome do paciente, o produto e a quantidade.</p>
               <button
                 onClick={gerarRastreio}
                 disabled={!selecionados.length || gerando}
                 className="mt-4 rounded-lg bg-brand-600 px-5 py-2.5 font-semibold text-white hover:bg-brand-700 disabled:opacity-50"
               >
-                {gerando ? 'Gerando…' : `Gerar PDF · ${selecionados.length} etiqueta(s)`}
+                {gerando ? 'Gerando…' : `Gerar PDF · ${selecionados.length * 2} etiqueta(s) (${selecionados.length} pedidos)`}
               </button>
             </div>
           </div>
@@ -193,6 +197,13 @@ export default function Glp1Etiquetas() {
                 <input type="number" value={atual.altura} onChange={(e) => setAtual({ altura: e.target.value })} className={`w-16 ${inp}`} />
                 <span className="text-slate-400">largura × altura</span>
               </div>
+              <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600">
+                <span>Resolução da Zebra:</span>
+                <select value={dpi} onChange={(e) => setDpi(Number(e.target.value))} className={inp}>
+                  <option value={203}>203 dpi (8 pontos/mm)</option>
+                  <option value={300}>300 dpi (12 pontos/mm)</option>
+                </select>
+              </div>
               <label className="flex items-center gap-2 text-xs text-slate-600">
                 <input type="checkbox" checked={porUnidade} onChange={(e) => setPorUnidade(e.target.checked)} />
                 Uma etiqueta por unidade do pedido (quantidade)
@@ -220,13 +231,23 @@ export default function Glp1Etiquetas() {
                 </div>
               )}
               <div>
-                <button
-                  onClick={gerarVial}
-                  disabled={!selecionados.length || gerando || faltaCampo}
-                  className="rounded-lg bg-brand-600 px-5 py-2.5 font-semibold text-white hover:bg-brand-700 disabled:opacity-50"
-                >
-                  {gerando ? 'Gerando…' : `Gerar PDF ${modeloId} · ${qtdEtiquetas} etiqueta(s)`}
-                </button>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => gerarVial('zpl')}
+                    disabled={!selecionados.length || gerando || faltaCampo}
+                    className="rounded-lg bg-brand-600 px-5 py-2.5 font-semibold text-white hover:bg-brand-700 disabled:opacity-50"
+                    title="Arquivo .zpl: vai direto para a impressora Zebra"
+                  >
+                    {gerando ? 'Gerando…' : `Gerar para Zebra (.zpl) · ${qtdEtiquetas} etiqueta(s)`}
+                  </button>
+                  <button
+                    onClick={() => gerarVial('pdf')}
+                    disabled={!selecionados.length || gerando || faltaCampo}
+                    className="rounded-lg bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-200 disabled:opacity-50"
+                  >
+                    PDF
+                  </button>
+                </div>
                 {faltaCampo && <div className="mt-1 text-xs text-amber-700">Preencha {campos.map((k) => ROTULO_CAMPO[k] || k).join(', ')}.</div>}
               </div>
             </div>
