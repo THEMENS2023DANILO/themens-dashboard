@@ -18,7 +18,11 @@ const items = [
   { to: '/glp1-etiquetas', label: 'GLP1 - Etiquetas', icon: '🏷️' },
 ]
 
-export default function Layout({ email, master, children }) {
+// Papel 'glp1' só vê as abas GLP1
+const SO_GLP1 = ['/glp1', '/glp1-fiscal', '/glp1-gollog', '/glp1-etiquetas']
+
+export default function Layout({ email, master, papel, children }) {
+  const visiveis = papel === 'glp1' ? items.filter((it) => SO_GLP1.includes(it.to)) : items
   return (
     <div className="flex min-h-screen">
       <aside className="flex w-64 shrink-0 flex-col bg-ink-900 text-slate-200">
@@ -27,7 +31,7 @@ export default function Layout({ email, master, children }) {
           <div className="text-xs uppercase tracking-widest text-slate-400">Dashboard</div>
         </div>
         <nav className="flex-1 space-y-1 px-3">
-          {[...items, ...(master ? [{ to: '/usuarios', label: 'Usuários', icon: '🔐' }] : [])].map((it) => (
+          {[...visiveis, ...(master ? [{ to: '/usuarios', label: 'Usuários', icon: '🔐' }] : [])].map((it) => (
             <NavLink
               key={it.to}
               to={it.to}
