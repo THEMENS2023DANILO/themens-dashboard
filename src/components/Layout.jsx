@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
 import { supabase } from '../supabase'
 import NovaVersao from './NovaVersao'
@@ -22,6 +23,41 @@ const items = [
 const SO_GLP1 = ['/glp1', '/glp1-fiscal', '/glp1-gollog', '/glp1-etiquetas']
 
 export default function Layout({ email, master, papel, children }) {
+  // Ao começar a arrastar dentro de uma célula, trava a seleção naquela coluna (ex.: copiar só os nº de pedido)
+  useEffect(() => {
+    const aoPressionar = (e) => {
+      document.querySelectorAll('table[data-col-sel]').forEach((t) => {
+        if (!t.contains(e.target)) t.removeAttribute('data-col-sel')
+      })
+      const td = e.target.closest?.('td')
+      const tabela = td?.closest('table')
+      if (!td || !tabela || e.target.closest('input, select, button, textarea, a')) return
+      tabela.setAttribute('data-col-sel', String(td.cellIndex + 1))
+    }
+    // Ctrl+C copia só a coluna travada, uma linha por célula
+    const aoCopiar = (e) => {
+      const sel = window.getSelection()
+      if (!sel || sel.isCollapsed) return
+      const tabela = document.querySelector('table[data-col-sel]')
+      if (!tabela || !sel.containsNode(tabela, true)) return
+      const col = Number(tabela.getAttribute('data-col-sel')) - 1
+      const textos = [...tabela.tBodies].flatMap((tb) => [...tb.rows])
+        .map((tr) => tr.cells[col])
+        .filter((td) => td && sel.containsNode(td, true))
+        .map((td) => td.innerText.trim())
+        .filter(Boolean)
+      if (!textos.length) return
+      e.clipboardData.setData('text/plain', textos.join('\n'))
+      e.preventDefault()
+    }
+    document.addEventListener('mousedown', aoPressionar)
+    document.addEventListener('copy', aoCopiar)
+    return () => {
+      document.removeEventListener('mousedown', aoPressionar)
+      document.removeEventListener('copy', aoCopiar)
+    }
+  }, [])
+
   const visiveis = papel === 'glp1' ? items.filter((it) => SO_GLP1.includes(it.to)) : items
   return (
     <div className="flex min-h-screen">
