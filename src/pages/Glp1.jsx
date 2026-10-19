@@ -111,6 +111,33 @@ export default function Glp1() {
   const [erroStatus, setErroStatus] = useState('')
   const [modalRota, setModalRota] = useState(null)
   const [tick, setTick] = useState(0)
+  const [syncPipefy, setSyncPipefy] = useState(false)
+  const [msgPipefy, setMsgPipefy] = useState(null)
+
+  // Roda a sincronização completa do Pipefy na hora (a automática é 1x por dia, às 21h)
+  async function atualizarPipefy() {
+    setSyncPipefy(true)
+    setMsgPipefy(null)
+    try {
+      const { data, error } = await supabase.functions.invoke('sync-pipefy', { body: { completo: true } })
+      let r = data
+      if (error) {
+        try { r = await error.context.json() } catch { r = { ok: false, erro: error.message } }
+      }
+      if (!r?.ok) throw new Error(r?.erro || 'falha desconhecida')
+      if (r.recente) {
+        setMsgPipefy({ texto: `Já atualizado agora há pouco (${fmtDateTime(r.sincronizado_em)}).` })
+      } else {
+        const n = Number(r.status_atualizados) || 0
+        setMsgPipefy({ texto: `Pipefy lido: ${r.cards} cards · ${n} status atualizado${n === 1 ? '' : 's'}.` })
+      }
+      setTick((n) => n + 1)
+    } catch (e) {
+      setMsgPipefy({ erro: true, texto: `Erro ao atualizar do Pipefy: ${e.message}` })
+    } finally {
+      setSyncPipefy(false)
+    }
+  }
 
   async function salvarStatus(p, novo, transportadora = null, rastreio = null) {
     setSalvando(p.shopify_order_id)
@@ -199,13 +226,25 @@ export default function Glp1() {
             Só pedidos pagos · entram em tempo real pelo webhook do Shopify · tela atualiza a cada 1 min · último pedido: {fmtDateTime(dados?.resumo?.ultimo_pedido)}
           </div>
         </div>
-        <button
-          onClick={() => baixarCsv(lista)}
-          disabled={!lista.length}
-          className="rounded-lg bg-white px-4 py-1.5 text-sm font-medium text-slate-600 shadow-sm hover:bg-slate-50 disabled:opacity-50"
-        >
-          Baixar CSV ({lista.length})
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          {msgPipefy && (
+            <span className={`text-xs ${msgPipefy.erro ? 'text-red-600' : 'text-emerald-700'}`}>{msgPipefy.texto}</span>
+          )}
+          <button
+            onClick={atualizarPipefy}
+            disabled={syncPipefy}
+            className="rounded-lg bg-brand-600 px-4 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 disabled:opacity-60"
+          >
+            {syncPipefy ? 'Atualizando… (até 1 min)' : 'Atualizar do Pipefy'}
+          </button>
+          <button
+            onClick={() => baixarCsv(lista)}
+            disabled={!lista.length}
+            className="rounded-lg bg-white px-4 py-1.5 text-sm font-medium text-slate-600 shadow-sm hover:bg-slate-50 disabled:opacity-50"
+          >
+            Baixar CSV ({lista.length})
+          </button>
+        </div>
       </div>
 
       {erroCarga && <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">Erro ao carregar: {erroCarga}</div>}
@@ -326,7 +365,7 @@ export default function Glp1() {
                             className="mt-1 whitespace-nowrap text-slate-400"
                             title={`Atualizado por ${p.status_atualizado_por || '—'} em ${fmtDateTime(p.status_atualizado_em)}`}
                           >
-                            {p.status_origem === 'planilha' ? 'via planilha' : p.status_origem === 'presumido' ? 'presumido (antigo)' : `por ${(p.status_atualizado_por || '').split('@')[0]}`}
+                            {p.status_origem === 'pipefy' ? 'via Pipefy' : p.status_origem === 'planilha' ? 'via planilha' : p.status_origem === 'presumido' ? 'presumido (antigo)' : `por ${(p.status_atualizado_por || '').split('@')[0]}`}
                           </div>
                         )}
                         <div className="mt-1 whitespace-nowrap text-slate-400">Shopify: {statusShopify(p)}</div>
