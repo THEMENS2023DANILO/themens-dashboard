@@ -69,7 +69,7 @@ export default function Layout({ email, master, papel, children }) {
           <div className="text-xs uppercase tracking-widest text-slate-400">Dashboard</div>
         </div>
         <nav className="flex-1 space-y-1 px-3">
-          {[...visiveis, ...(master ? [{ to: '/usuarios', label: 'Usuários', icon: '🔐' }] : [])].map((it) => (
+          {[...visiveis, ...(master ? [{ to: '/dre', label: 'DRE', icon: '📈' }, { to: '/usuarios', label: 'Usuários', icon: '🔐' }] : [])].map((it) => (
             <NavLink
               key={it.to}
               to={it.to}
