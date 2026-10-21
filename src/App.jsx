@@ -17,6 +17,7 @@ import Glp1Fiscal from './pages/Glp1Fiscal'
 import Glp1Gollog from './pages/Glp1Gollog'
 import Glp1Etiquetas from './pages/Glp1Etiquetas'
 import CheckCpf from './pages/CheckCpf'
+import Aprovacoes from './pages/Aprovacoes'
 import MfaGate from './pages/Mfa'
 import Usuarios from './pages/Usuarios'
 
@@ -63,6 +64,7 @@ export default function App() {
           <Route path="/glp1-gollog" element={<Glp1Gollog />} />
           <Route path="/glp1-etiquetas" element={<Glp1Etiquetas />} />
           <Route path="/check-cpf" element={<CheckCpf />} />
+          <Route path="/aprovacoes" element={<Aprovacoes />} />
           <Route path="/usuarios" element={<Usuarios />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
