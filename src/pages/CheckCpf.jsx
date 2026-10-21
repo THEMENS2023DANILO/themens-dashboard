@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase, fmtDateTime } from '../supabase'
 import { Card, Spinner, Th, Td } from '../components/ui'
 import { fmtCpf, semAcento } from '../lib/glp1'
+import { useChargebacks, ChargebackBadge } from '../components/Chargeback'
 
 // Check CPF: clientes que compraram GLP1 (Shopify) x dados da Receita Federal (API Consulta CPF do Serpro).
 // Nascimento vem da avaliação médica (wl_avaliacoes_shopify; se faltar, do cadastro da plataforma).
@@ -35,6 +36,8 @@ const COR_CARTAO = {
 }
 const TXT_CARTAO = { confere: '✓ confere', parcial: '~ parcial', diverge: '✗ diverge' }
 
+const cpfConsultaDifere = (r) => !!r.cpf_consulta && r.cpf_consulta !== r.cpf
+
 const temAlerta = (r) =>
   r.serpro_ok && (String(r.serpro_situacao_codigo) !== '0' || r.serpro_ano_obito || r.nome_confere === false || r.nascimento_confere === false)
 
@@ -42,7 +45,9 @@ const FILTROS = [
   { v: '', label: 'Todos' },
   { v: 'nao', label: 'Não consultados' },
   { v: 'alerta', label: 'Com alerta' },
+  { v: 'chargeback', label: 'Chargeback' },
   { v: 'cartao', label: 'Cartão diverge' },
+  { v: 'consulta', label: 'CPF consulta ≠ compra' },
   { v: 'erro', label: 'Erro na consulta' },
   { v: 'ok', label: 'Tudo certo' },
 ]
@@ -56,10 +61,12 @@ export default function CheckCpf() {
   const [rodando, setRodando] = useState(null) // { feitos, total }
   const [msg, setMsg] = useState(null)
   const [tick, setTick] = useState(0)
+  const chargebacks = useChargebacks(tick)
+  const cb = (r) => chargebacks.get(String(r.shopify_order_id))
 
   useEffect(() => {
     let vivo = true
-    supabase.rpc('dash_check_cpf_cartao', { p_limit: 5000 }).then(({ data, error }) => {
+    supabase.rpc('dash_check_cpf_v3', { p_limit: 5000 }).then(({ data, error }) => {
       if (!vivo) return
       if (error) { setErroCarga(error.message); return }
       setErroCarga('')
@@ -75,7 +82,9 @@ export default function CheckCpf() {
     return linhas.filter((r) => {
       if (filtro === 'nao' && r.serpro_consultado_em) return false
       if (filtro === 'alerta' && !temAlerta(r)) return false
+      if (filtro === 'chargeback' && !cb(r)) return false
       if (filtro === 'cartao' && r.cartao_confere !== 'diverge') return false
+      if (filtro === 'consulta' && !cpfConsultaDifere(r)) return false
       if (filtro === 'erro' && !(r.serpro_consultado_em && !r.serpro_ok)) return false
       if (filtro === 'ok' && !(r.serpro_ok && !temAlerta(r))) return false
       if (!s) return true
@@ -84,7 +93,7 @@ export default function CheckCpf() {
         (sd && (r.cpf.includes(sd) || (r.pedido || '').replace(/\D/g, '') === sd))
       )
     })
-  }, [linhas, busca, filtro])
+  }, [linhas, busca, filtro, chargebacks])
 
   const resumo = useMemo(() => {
     const t = linhas || []
@@ -94,6 +103,7 @@ export default function CheckCpf() {
       alerta: t.filter(temAlerta).length,
       erro: t.filter((r) => r.serpro_consultado_em && !r.serpro_ok).length,
       cartao: t.filter((r) => r.cartao_confere === 'diverge').length,
+      consulta: t.filter(cpfConsultaDifere).length,
     }
   }, [linhas])
 
@@ -160,11 +170,12 @@ export default function CheckCpf() {
 
       {!linhas ? <Spinner /> : (
         <>
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
             <button onClick={() => setFiltro('')} className="text-left [&>div]:h-full"><Card title="CPFs" value={resumo.total} sub="clientes únicos" /></button>
             <button onClick={() => setFiltro('nao')} className="text-left [&>div]:h-full"><Card title="Não consultados" value={resumo.nao} /></button>
             <button onClick={() => setFiltro('alerta')} className="text-left [&>div]:h-full"><Card title="Com alerta" value={resumo.alerta} sub="situação, óbito ou divergência" accent="text-red-600" /></button>
             <button onClick={() => setFiltro('cartao')} className="text-left [&>div]:h-full"><Card title="Cartão diverge" value={resumo.cartao} sub="nome do cartão ≠ titular" accent="text-red-600" /></button>
+            <button onClick={() => setFiltro('consulta')} className="text-left [&>div]:h-full"><Card title="CPF consulta ≠ compra" value={resumo.consulta} sub="consulta médica com outro CPF" accent="text-red-600" /></button>
             <button onClick={() => setFiltro('erro')} className="text-left [&>div]:h-full"><Card title="Erro na consulta" value={resumo.erro} /></button>
           </div>
 
@@ -211,7 +222,7 @@ export default function CheckCpf() {
             <table className="min-w-full">
               <thead>
                 <tr>
-                  <th className="border-b border-slate-200 bg-slate-50 px-3 py-2" colSpan={8} />
+                  <th className="border-b border-slate-200 bg-slate-50 px-3 py-2" colSpan={9} />
                   <th className="border-b border-l border-slate-200 bg-brand-50 px-3 py-1 text-left text-xs font-bold uppercase tracking-wide text-brand-700" colSpan={8}>
                     Serpro — Receita Federal
                   </th>
@@ -224,6 +235,7 @@ export default function CheckCpf() {
                   <Th>Compra</Th>
                   <Th>Nome (compra)</Th>
                   <Th>CPF</Th>
+                  <Th>CPF consulta médica</Th>
                   <Th>Nascimento (avaliação)</Th>
                   <Th>Nome no cartão</Th>
                   <Th>Confere cartão</Th>
@@ -241,10 +253,25 @@ export default function CheckCpf() {
                 {lista.map((r) => (
                   <tr key={r.cpf} className={temAlerta(r) ? 'bg-red-50/40' : ''}>
                     <Td><input type="checkbox" checked={sel.has(r.cpf)} onChange={() => alterna(r.cpf)} /></Td>
-                    <Td className="whitespace-nowrap font-medium">{r.pedido}</Td>
+                    <Td className="whitespace-nowrap font-medium">
+                      {r.pedido}
+                      <ChargebackBadge info={cb(r)} />
+                    </Td>
                     <Td className="whitespace-nowrap text-slate-500">{fmtDateTime(r.comprado_em)}</Td>
                     <Td className="whitespace-nowrap">{r.nome_compra || '—'}</Td>
                     <Td className="whitespace-nowrap font-mono text-xs">{fmtCpf(r.cpf)}</Td>
+                    <Td className="whitespace-nowrap">
+                      {!r.cpf_consulta ? (
+                        <span className="text-xs text-slate-400">sem consulta</span>
+                      ) : cpfConsultaDifere(r) ? (
+                        <span title={`Consulta de ${fmtDateTime(r.consulta_em)} · paciente achado pelo ${r.consulta_vinculo} da compra`}>
+                          <span className="font-mono text-xs font-semibold text-red-600">{fmtCpf(r.cpf_consulta)}</span>
+                          <span className="ml-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">≠ compra · {r.consulta_vinculo}</span>
+                        </span>
+                      ) : (
+                        <span title={`Consulta de ${fmtDateTime(r.consulta_em)}`} className="text-xs font-semibold text-emerald-600">✓ mesmo CPF</span>
+                      )}
+                    </Td>
                     <Td className="whitespace-nowrap">{fmtDia(r.nascimento_avaliacao)}</Td>
                     <Td className="whitespace-nowrap">
                       {r.cartao_nome ? (
@@ -295,7 +322,7 @@ export default function CheckCpf() {
                   </tr>
                 ))}
                 {!lista.length && (
-                  <tr><td colSpan={16} className="py-10 text-center text-sm text-slate-400">Nenhum cliente nesse filtro.</td></tr>
+                  <tr><td colSpan={17} className="py-10 text-center text-sm text-slate-400">Nenhum cliente nesse filtro.</td></tr>
                 )}
               </tbody>
             </table>

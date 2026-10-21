@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase, fmtBRL, fmtDate, fmtDateTime } from '../supabase'
 import { Card, Section, Spinner, Th, Td } from '../components/ui'
+import { useChargebacks, ChargebackBadge } from '../components/Chargeback'
 import { STATUS, COR_STATUS, PRODUTOS, ROTAS, emRota, ehPago, fmtCpf, bateBusca } from '../lib/glp1'
 
 // Pedidos GLP1 da loja Shopify (tabela shopify_glp1), do mais recente para o mais antigo.
@@ -111,6 +112,7 @@ export default function Glp1() {
   const [erroStatus, setErroStatus] = useState('')
   const [modalRota, setModalRota] = useState(null)
   const [tick, setTick] = useState(0)
+  const chargebacks = useChargebacks(tick)
   const [syncPipefy, setSyncPipefy] = useState(false)
   const [msgPipefy, setMsgPipefy] = useState(null)
 
@@ -335,7 +337,10 @@ export default function Glp1() {
                   )}
                   {lista.map((p) => (
                     <tr key={p.shopify_order_id} className="align-top hover:bg-slate-50">
-                      <Td className="whitespace-nowrap font-mono font-semibold text-ink-900">{p.pedido}</Td>
+                      <Td className="whitespace-nowrap font-mono font-semibold text-ink-900">
+                        {p.pedido}
+                        <ChargebackBadge info={chargebacks.get(String(p.shopify_order_id))} />
+                      </Td>
                       <Td className="text-xs">{fmtDateTime(p.created_at)}</Td>
                       <Td className="text-xs">
                         <select
