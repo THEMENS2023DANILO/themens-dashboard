@@ -18,6 +18,7 @@ const items = [
   { to: '/glp1-gollog', label: 'GLP1 - Gollog', icon: '✈️' },
   { to: '/glp1-etiquetas', label: 'GLP1 - Etiquetas', icon: '🏷️' },
   { to: '/check-cpf', label: 'Check CPF', icon: '🪪' },
+  { to: '/aprovacoes', label: 'Aprovações', icon: '💳' },
 ]
 
 // Papel 'glp1' só vê as abas GLP1
