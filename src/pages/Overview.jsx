@@ -58,8 +58,9 @@ export default function Overview() {
         buscar(() => supabase.from('v_dash_consultas_agrupadas').select('tipo_consulta, medico_nome, total').gte('attend_date', from).lte('attend_date', to).limit(5000)),
         buscar(() => supabase.from('v_dash_consultas').select('id', { count: 'exact', head: true }).eq('status', 1).gte('request_date', '2026-01-01')),
         buscar(() => supabase.from('v_dash_pedidos').select('valor_total, paid_at').gte('created_at', start).lt('created_at', end).limit(20000)),
-        buscar(() => supabase.from('v_dash_fb_spend_filtered').select('business_manager, account_name, spend').gte('date', from).lte('date', to).limit(20000)),
-        buscar(() => supabase.from('v_dash_fb_spend_filtered').select('date').order('date', { ascending: false }).limit(1)),
+        // gasto Meta da BM The Men's por produto (campanhas TD = Tadalaspray, PR = Prolongue; WL fica de fora)
+        buscar(() => supabase.from('v_dash_spend_produto').select('produto, spend').gte('date', from).lte('date', to).limit(20000)),
+        buscar(() => supabase.from('v_dash_spend_produto').select('date').order('date', { ascending: false }).limit(1)),
         buscar(() => supabase.from('v_dash_pedidos').select('valor_total').not('paid_at', 'is', null).gte('paid_at', monthStart).lt('paid_at', monthEnd.toISOString()).limit(50000)),
       ])
 
@@ -80,8 +81,8 @@ export default function Overview() {
       const projecao = fatMes == null ? null : diaAtual > 0 ? (fatMes / diaAtual) * diasNoMes : 0
       const pagos = (pedidos.data || []).filter((p) => p.paid_at)
       const naoPagos = (pedidos.data || []).filter((p) => !p.paid_at)
-      const spendPorBM = {}
-      for (const s of spend.data || []) spendPorBM[s.account_name] = (spendPorBM[s.account_name] || 0) + Number(s.spend)
+      const spendProduto = { Tadalaspray: 0, Prolongue: 0 }
+      for (const s of spend.data || []) spendProduto[s.produto] = (spendProduto[s.produto] || 0) + Number(s.spend)
 
       setData({
         falhas,
@@ -95,8 +96,9 @@ export default function Overview() {
         valorPagos: pedidos.error ? null : pagos.reduce((s, p) => s + Number(p.valor_total || 0), 0),
         pedidosNaoPagos: pedidos.error ? null : naoPagos.length,
         valorNaoPagos: pedidos.error ? null : naoPagos.reduce((s, p) => s + Number(p.valor_total || 0), 0),
-        spendTotal: spend.error ? null : Object.values(spendPorBM).reduce((a, b) => a + b, 0),
-        spendPorBM,
+        spendTotal: spend.error ? null : spendProduto.Tadalaspray + spendProduto.Prolongue,
+        spendTd: spend.error ? null : spendProduto.Tadalaspray,
+        spendPr: spend.error ? null : spendProduto.Prolongue,
         ultimoSpend: lastSpend.data?.[0]?.date,
         fatMes,
         projecao,
@@ -143,10 +145,13 @@ export default function Overview() {
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
             <Card title="Valor pedidos pagos" value={brl(data.valorPagos)} accent="text-emerald-600" />
             <Card title="Valor não pagos" value={brl(data.valorNaoPagos)} accent="text-slate-400" />
-            <Card title="Spend Meta total" value={brl(data.spendTotal)} accent="text-rose-600" sub={spendDesatualizado ? `⚠️ dados até ${data.ultimoSpend}` : null} />
-            {Object.entries(data.spendPorBM).map(([bm, v]) => (
-              <Card key={bm} title={`Spend ${bm}`} value={fmtBRL(v)} accent="text-rose-500" />
-            ))}
+            <Card
+              title="Spend Tadalaspray"
+              value={brl(data.spendTd)}
+              accent="text-rose-600"
+              sub={spendDesatualizado ? `⚠️ dados até ${data.ultimoSpend}` : `campanhas TD · total TD+PR ${brl(data.spendTotal)}`}
+            />
+            <Card title="Spend Prolongue" value={brl(data.spendPr)} accent="text-rose-500" sub="campanhas PR" />
           </div>
 
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
