@@ -36,6 +36,16 @@ const COR_CARTAO = {
 }
 const TXT_CARTAO = { confere: '✓ confere', parcial: '~ parcial', diverge: '✗ diverge' }
 
+// data e hora no fuso de SP
+const fmtDiaSP = (d) => (d ? new Date(d).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) : '—')
+const horaSP = (d) => (d ? new Date(d).toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' }) : '—')
+const madrugada = (d) => {
+  if (!d) return false
+  const h = Number(new Date(d).toLocaleString('en-US', { timeZone: 'America/Sao_Paulo', hour: '2-digit', hour12: false })) % 24
+  return h >= 22 || h < 6
+}
+const ipOutroEstado = (r) => !!r.ip_uf && !!r.entrega_uf && r.ip_uf !== r.entrega_uf
+
 const cpfConsultaDifere = (r) => !!r.cpf_consulta && r.cpf_consulta !== r.cpf
 
 const temAlerta = (r) =>
@@ -48,6 +58,8 @@ const FILTROS = [
   { v: 'chargeback', label: 'Chargeback' },
   { v: 'cartao', label: 'Cartão diverge' },
   { v: 'consulta', label: 'CPF consulta ≠ compra' },
+  { v: 'ip', label: 'IP de outro estado' },
+  { v: 'madrugada', label: 'Madrugada' },
   { v: 'erro', label: 'Erro na consulta' },
   { v: 'ok', label: 'Tudo certo' },
 ]
@@ -66,7 +78,7 @@ export default function CheckCpf() {
 
   useEffect(() => {
     let vivo = true
-    supabase.rpc('dash_check_cpf_v3', { p_limit: 5000 }).then(({ data, error }) => {
+    supabase.rpc('dash_check_cpf_v4', { p_limit: 5000 }).then(({ data, error }) => {
       if (!vivo) return
       if (error) { setErroCarga(error.message); return }
       setErroCarga('')
@@ -83,6 +95,8 @@ export default function CheckCpf() {
       if (filtro === 'nao' && r.serpro_consultado_em) return false
       if (filtro === 'alerta' && !temAlerta(r)) return false
       if (filtro === 'chargeback' && !cb(r)) return false
+      if (filtro === 'ip' && !ipOutroEstado(r)) return false
+      if (filtro === 'madrugada' && !madrugada(r.comprado_em)) return false
       if (filtro === 'cartao' && r.cartao_confere !== 'diverge') return false
       if (filtro === 'consulta' && !cpfConsultaDifere(r)) return false
       if (filtro === 'erro' && !(r.serpro_consultado_em && !r.serpro_ok)) return false
@@ -222,7 +236,7 @@ export default function CheckCpf() {
             <table className="min-w-full">
               <thead>
                 <tr>
-                  <th className="border-b border-slate-200 bg-slate-50 px-3 py-2" colSpan={9} />
+                  <th className="border-b border-slate-200 bg-slate-50 px-3 py-2" colSpan={11} />
                   <th className="border-b border-l border-slate-200 bg-brand-50 px-3 py-1 text-left text-xs font-bold uppercase tracking-wide text-brand-700" colSpan={8}>
                     Serpro — Receita Federal
                   </th>
@@ -232,11 +246,13 @@ export default function CheckCpf() {
                     <input type="checkbox" checked={todosMarcados} onChange={marcaTodos} />
                   </th>
                   <Th>Pedido</Th>
-                  <Th>Compra</Th>
+                  <Th>Data</Th>
+                  <Th>Horário</Th>
                   <Th>Nome (compra)</Th>
                   <Th>CPF</Th>
                   <Th>CPF consulta médica</Th>
                   <Th>Nascimento (avaliação)</Th>
+                  <Th>IP da compra × entrega</Th>
                   <Th>Nome no cartão</Th>
                   <Th>Confere cartão</Th>
                   <Th>Nome na Receita</Th>
@@ -257,7 +273,12 @@ export default function CheckCpf() {
                       {r.pedido}
                       <ChargebackBadge info={cb(r)} />
                     </Td>
-                    <Td className="whitespace-nowrap text-slate-500">{fmtDateTime(r.comprado_em)}</Td>
+                    <Td className="whitespace-nowrap text-slate-500">{fmtDiaSP(r.comprado_em)}</Td>
+                    <Td className="whitespace-nowrap">
+                      {madrugada(r.comprado_em)
+                        ? <span title="Compra entre 22h e 6h" className="rounded-full bg-orange-100 px-2 py-0.5 text-xs font-semibold text-orange-800">{horaSP(r.comprado_em)}</span>
+                        : <span className="text-slate-500">{horaSP(r.comprado_em)}</span>}
+                    </Td>
                     <Td className="whitespace-nowrap">{r.nome_compra || '—'}</Td>
                     <Td className="whitespace-nowrap font-mono text-xs">{fmtCpf(r.cpf)}</Td>
                     <Td className="whitespace-nowrap">
@@ -273,6 +294,14 @@ export default function CheckCpf() {
                       )}
                     </Td>
                     <Td className="whitespace-nowrap">{fmtDia(r.nascimento_avaliacao)}</Td>
+                    <Td className="whitespace-nowrap text-xs">
+                      <div className="font-mono text-slate-500">{r.ip_compra || '—'}</div>
+                      <div title="Localização aproximada do IP (operadora de celular pode aparecer em outra cidade)">
+                        IP: {[r.ip_cidade, r.ip_uf].filter(Boolean).join('/') || '—'}
+                      </div>
+                      <div className="text-slate-500">Entrega: {[r.entrega_cidade, r.entrega_uf].filter(Boolean).join('/') || '—'}</div>
+                      {ipOutroEstado(r) && <span className="mt-0.5 inline-block rounded-full bg-red-100 px-2 py-0.5 font-medium text-red-700">≠ estado</span>}
+                    </Td>
                     <Td className="whitespace-nowrap">
                       {r.cartao_nome ? (
                         <>
@@ -322,7 +351,7 @@ export default function CheckCpf() {
                   </tr>
                 ))}
                 {!lista.length && (
-                  <tr><td colSpan={17} className="py-10 text-center text-sm text-slate-400">Nenhum cliente nesse filtro.</td></tr>
+                  <tr><td colSpan={19} className="py-10 text-center text-sm text-slate-400">Nenhum cliente nesse filtro.</td></tr>
                 )}
               </tbody>
             </table>
